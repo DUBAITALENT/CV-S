@@ -1,14 +1,90 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Driver CVs</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Available Driver CVs</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 35px auto;
+      padding: 0 16px;
+      color: #222;
+    }
+    h2 { color: #111; }
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    li { margin: 14px 0; }
+    a { color: #075fc7; }
+  </style>
 </head>
 <body>
-<h2>Available CVs</h2>
-<ul>
-<li><a href="/AZAHAR%20HOSSAIN%20CV.pdf">Azahar Hossain CV</a></li>
-</ul>
+  <h2>Available Driver CVs</h2>
+  <p>Search and open a driver's CV below.</p>
+  <input id="search" placeholder="Search driver name...">
+  <ul id="cv-list">Loading CVs...</ul>
+
+  <script>
+    const owner = "DUBAITALENT";
+    const repo = "CV-S";
+    const branch = "main";
+
+    async function loadCVs() {
+      const list = document.getElementById("cv-list");
+      try {
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`
+        );
+        if (!response.ok) throw new Error("Could not load files");
+
+        const data = await response.json();
+        const pdfs = data.tree.filter(file =>
+          file.type === "blob" &&
+          file.path.toLowerCase().endsWith(".pdf")
+        );
+
+        list.innerHTML = "";
+
+        if (!pdfs.length) {
+          list.textContent = "No CV PDFs found.";
+          return;
+        }
+
+        pdfs.sort((a, b) => a.path.localeCompare(b.path));
+
+        pdfs.forEach(file => {
+          const li = document.createElement("li");
+          const link = document.createElement("a");
+          link.href = "/" + file.path.split("/").map(encodeURIComponent).join("/");
+          link.textContent = file.path.split("/").pop()
+            .replace(/\.pdf$/i, "")
+            .replace(/[-_]/g, " ");
+          link.target = "_blank";
+          link.rel = "noopener";
+          li.appendChild(link);
+          list.appendChild(li);
+        });
+
+        document.getElementById("search").addEventListener("input", event => {
+          const term = event.target.value.toLowerCase();
+          [...list.children].forEach(item => {
+            item.hidden = !item.textContent.toLowerCase().includes(term);
+          });
+        });
+      } catch (error) {
+        list.textContent = "CV list could not load. Please try again later.";
+      }
+    }
+
+    loadCVs();
+  </script>
 </body>
 </html>
